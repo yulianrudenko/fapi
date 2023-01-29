@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi import (
-    Path, Query, Body,
+    Path, Query, Body, Cookie, Header,
     status
 )
+from pydantic import Required
+from typing import Any
 
 from models import Player, Club, players, clubs
 from utils import generate_id
@@ -17,7 +19,7 @@ app = FastAPI()
             CLUBS
 ---------------------------------
 '''
-@app.get('/clubs')
+@app.get('/clubs', response_model=list[Club])
 async def club_list(
     ids: list[int] | None = Query(
         default=None,
@@ -31,17 +33,18 @@ async def club_list(
         default=0, gte=0,
         title='Offset', description='Club index to start retrieving from',    
     ),
-) -> set[Club]:
+) -> Any:
     if ids:
         clubs_list = []
         for club in clubs:
             if club.id in ids:
                 clubs_list.append(club)
-        return {'clubs': clubs_list}
-    return clubs[offset:limit+offset]
+    else:
+        clubs_list = clubs
+    return clubs_list[offset:limit+offset]
 
-print({'normal': {**Club.Config.schema_extra['example']}})
-@app.post('/clubs')
+
+@app.post('/clubs', response_model=Club)
 async def club_create(
     club: Club = Body(examples={
         'normal': {
@@ -68,7 +71,7 @@ async def club_create(
             },
         },
     })
-) -> Club:
+) -> Any:
     club.id = generate_id(clubs)
     for player in club.players:
         player.id = generate_id(players)
@@ -77,10 +80,10 @@ async def club_create(
     return club
 
 
-@app.get('/clubs/{id}')
+@app.get('/clubs/{id}', response_model=Club)
 async def club_detail(
     id: int = Path(title='Club ID', description='ID of the club to retrieve')
-) -> Club:
+) -> Any:
     try:
         club = [club for club in clubs if club.id == id][0]
     except:
@@ -93,6 +96,6 @@ async def club_detail(
             PLAYRES
 ---------------------------------
 '''
-@app.get('/players')
-async def player_list() -> set[Player]:
-    return {'players': players}
+@app.get('/players', response_model=list[Player])
+async def player_list() -> Any:
+    return players
