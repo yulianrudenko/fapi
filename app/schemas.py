@@ -1,16 +1,14 @@
-from pydantic import BaseModel, Field, validator
-from datetime import datetime, date, timedelta
+from pydantic import BaseModel, Field, validator, EmailStr
+from datetime import datetime, date
+
 
 class UserBase(BaseModel):
-    username: str
+    email: EmailStr
     first_name: str = Field(
         min_length=2, max_length=110,
         description='First name',
     )
     birth_date: date = Field(description='Birth Date')
-
-    class Config:
-        orm_mode = True
 
     @validator('birth_date')
     def validate_birth_date(cls, birth_date):
@@ -22,11 +20,16 @@ class UserBase(BaseModel):
             raise ValueError('you must be over 18 to create an account')
         return birth_date
 
+
 class UserCreate(UserBase):
     password: str
 
+
 class UserOut(UserBase):
     id: int
+
+    class Config:
+        orm_mode = True
 
 
 class BasePost(BaseModel):
@@ -38,24 +41,12 @@ class BasePost(BaseModel):
         min_length=5, max_length=1000,
         description='Post Content'
     )
-    
-    class Config:
-        orm_mode = True
+    is_active: bool
 
-class PostOut(BasePost):
-    id: int | None
-    user: UserOut
-    published_at: datetime = Field(description='When Published')
-    updated_at: datetime = Field(description='When Updated')
 
 class PostCreate(BasePost):
-    class Config:
-        schema_extra = {
-            'example': {
-                'title': 'Hello',
-                'content': 'Hello World!',
-            }
-        }
+    pass
+
 
 class PostUpdate(BasePost):
     title: str | None = Field(
@@ -66,10 +57,14 @@ class PostUpdate(BasePost):
         min_length=5, max_length=1000,
         description='Post Content'
     )
+    is_active: bool | None
+
+
+class PostOut(BasePost):
+    id: int | None
+    user: UserOut
+    published_at: datetime = Field(description='When Published')
+    updated_at: datetime = Field(description='When Updated')
 
     class Config:
-        schema_extra = {
-            'example': {
-                'title': 'Updated title',
-            }
-        }
+        orm_mode = True
