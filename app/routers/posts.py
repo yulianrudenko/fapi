@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from .. import models, schemas
 
-router = APIRouter()
+router = APIRouter(prefix='/posts', tags=['posts'])
 
 
-@router.get('/posts', status_code=status.HTTP_200_OK)
+@router.get('/', status_code=status.HTTP_200_OK)
 async def get_posts(
     ids: list[int] | None = Query(
         default=None,
@@ -36,7 +36,7 @@ async def get_posts(
     return posts_query.offset(offset).limit(limit).all()
 
 
-@router.post('/posts', status_code=status.HTTP_201_CREATED)
+@router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_data: schemas.PostCreate = Body(),
     db: Session = Depends(get_db)
@@ -48,7 +48,7 @@ async def create_post(
     return post_obj
 
 
-@router.get('/posts/{id}', status_code=status.HTTP_200_OK)
+@router.get('/{id}/', status_code=status.HTTP_200_OK)
 async def get_post(
     id: int = Path(title='Post ID', description='ID of the post to retrieve'),
     db: Session = Depends(get_db),
@@ -59,7 +59,7 @@ async def get_post(
     return post_obj
 
 
-@router.patch('/posts/{id}', status_code=status.HTTP_200_OK)
+@router.patch('/{id}/', status_code=status.HTTP_200_OK)
 async def update_post(
     id: int = Path(title='Post ID', description='ID of the post to update'),
     post_data: schemas.PostUpdate = Body(),
