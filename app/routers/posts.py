@@ -8,6 +8,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from ..db import get_db
+from ..auth import get_current_user
 from .. import models, schemas
 
 router = APIRouter(prefix='/posts', tags=['posts'])
@@ -27,18 +28,21 @@ async def get_posts(
         default=0, gte=0,
         title='Offset', description='Post index to start retrieving from',    
     ),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> list[schemas.PostOut]:
     if ids:
         posts_query = db.query(models.Post).filter(models.User.id.in_(ids))
     else:
         posts_query = db.query(models.Post)
+        print('posts_query', posts_query)
     return posts_query.offset(offset).limit(limit).all()
 
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_data: schemas.PostCreate = Body(),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 )  -> schemas.PostOut:
     post_obj = models.Post(**{**post_data.dict(), 'user': db.query(models.User).first()})
@@ -48,9 +52,10 @@ async def create_post(
     return post_obj
 
 
-@router.get('/{id}/', status_code=status.HTTP_200_OK)
+@router.get('/{id}', status_code=status.HTTP_200_OK)
 async def get_post(
     id: int = Path(title='Post ID', description='ID of the post to retrieve'),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> schemas.PostOut:
     post_obj = db.query(models.Post).filter(models.Post.id == id).first()
@@ -59,10 +64,11 @@ async def get_post(
     return post_obj
 
 
-@router.patch('/{id}/', status_code=status.HTTP_200_OK)
+@router.patch('/{id}', status_code=status.HTTP_200_OK)
 async def update_post(
     id: int = Path(title='Post ID', description='ID of the post to update'),
     post_data: schemas.PostUpdate = Body(),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 )  -> schemas.PostOut:
     post_query = db.query(models.Post).filter(models.Post.id == id)

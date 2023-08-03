@@ -22,7 +22,7 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=5, max_length=50)
 
 
 class UserOut(UserBase):
@@ -30,6 +30,11 @@ class UserOut(UserBase):
 
     class Config:
         orm_mode = True
+
+
+class Token(BaseModel):
+    access_token: str
+    type: str
 
 
 class BasePost(BaseModel):
@@ -41,7 +46,6 @@ class BasePost(BaseModel):
         min_length=5, max_length=1000,
         description='Post Content'
     )
-    is_active: bool
 
 
 class PostCreate(BasePost):
@@ -62,9 +66,10 @@ class PostUpdate(BasePost):
 
 class PostOut(BasePost):
     id: int | None
-    user: UserOut
+    user_id: int 
     published_at: datetime = Field(description='When Published')
     updated_at: datetime = Field(description='When Updated')
+    is_active: bool
 
     class Config:
         orm_mode = True

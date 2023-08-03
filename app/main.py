@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
+from .routers import users, posts
 from .db import engine
 from . import models
-from .routers import users, posts
 
 
 models.Base.metadata.create_all(bind=engine)
