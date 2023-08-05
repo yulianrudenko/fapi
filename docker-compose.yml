@@ -10,6 +10,8 @@ services:
     command: uvicorn --host 0.0.0.0 --port 80 --reload app.main:app
     volumes:
       - ./app:/home/web/app/
+    env_file:
+      - .env
     ports:
       - "80:80"
     restart: "no"

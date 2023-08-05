@@ -2,8 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DB_URL = 'postgresql://admin:admin@db/db'
-engine = create_engine(SQLALCHEMY_DB_URL)
+from .config import settings
+
+
+engine = create_engine(settings.DB_URL)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base = declarative_base()
 
