@@ -2,6 +2,10 @@ from pydantic import BaseModel, Field, validator, EmailStr
 from datetime import datetime, date
 
 
+class MessageSuccess(BaseModel):
+    message: str = 'success'
+
+
 class UserBase(BaseModel):
     email: EmailStr
     first_name: str = Field(
@@ -70,6 +74,7 @@ class PostOut(BasePost):
     published_at: datetime = Field(description='When Published')
     updated_at: datetime = Field(description='When Updated')
     is_active: bool
+    likes_count: int
 
     class Config:
         orm_mode = True
