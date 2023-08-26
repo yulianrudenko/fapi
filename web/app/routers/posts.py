@@ -8,9 +8,9 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.db import get_db
-from app.auth import get_current_user
-from app import models, schemas
+from ..db import get_db
+from ..auth import get_current_user
+from .. import models, schemas
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
@@ -46,6 +46,7 @@ async def create_post(
     db.add(post_obj)
     db.commit()
     db.refresh(post_obj)
+    post_obj.likes_count = 0
     return post_obj
 
 
@@ -55,12 +56,10 @@ async def get_post(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> schemas.PostOut:
-    post_obj = db.query(models.Post, func.count(models.PostLike.post_id).label('likes_count')) \
-        .join(models.PostLike, models.PostLike.post_id == models.Post.id, isouter=True).group_by(models.Post.id) \
-        .filter(models.Post.id == id).first()
+    post_obj = db.query(models.Post).filter(models.Post.id == id).first()
     if post_obj is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
-    post_obj = schemas.PostOut(**post_obj[0].__dict__, likes_count=post_obj[1]) 
+    post_obj.likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == id).count()
     return post_obj
 
 
@@ -76,7 +75,9 @@ async def update_post(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
     post_query.update(post_data.dict(exclude_unset=True))
     db.commit()
-    return post_query.first()
+    post_obj = post_query.first()
+    post_obj.likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == id).count()
+    return post_obj
 
 
 @router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -87,7 +88,6 @@ async def delete_post(
 ) -> None:
     post_deleted = db.query(models.Post). \
         filter(models.Post.id == id, models.Post.user_id == current_user.id).delete()
-    print(post_deleted)
     if not post_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
     db.commit()
@@ -100,7 +100,7 @@ async def like_post(
     db: Session = Depends(get_db)
 ) -> schemas.MessageSuccess:
     # Check if provided post exists
-    post_obj = db.query(models.Post).filter(models.Post.id == post_id).first()
+    post_obj = db.query(models.Post).filter(models.Post.id == post_id, models.Post.is_active == True).first()
     if not post_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
 

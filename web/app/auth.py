@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
-from .selectors import get_user
+from .myselectors import get_user
 from .db import get_db
 from .config import settings
 

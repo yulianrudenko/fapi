@@ -7,11 +7,11 @@ from fastapi import (
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import models, schemas
-from app import selectors
-from app.db import get_db
-from app.utils import hash_password, verify_password
-from app.auth import create_access_token, get_current_user
+from .. import models, schemas
+from .. import myselectors
+from ..db import get_db
+from ..utils import hash_password, verify_password
+from ..auth import create_access_token, get_current_user
 
 router = APIRouter(prefix='/users', tags=['users'])
 
@@ -41,7 +41,7 @@ def login(credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depe
 
 @router.get('/{id}', status_code=status.HTTP_200_OK)
 def get_user(id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)) -> schemas.UserOut:
-    user_obj = selectors.get_user(id=id)
+    user_obj = myselectors.get_user(id=id)
     if not user_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='user not found')
     return user_obj

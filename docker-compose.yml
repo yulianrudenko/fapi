@@ -4,12 +4,12 @@ services:
   uvicorn:
     container_name: uvicorn
     build:
-      context: ./
+      context: ./web
       dockerfile: Dockerfile
     image: uvicorn
     command: uvicorn --host 0.0.0.0 --port 80 --reload app.main:app
     volumes:
-      - ./app:/home/web/app/
+      - ./web:/home/web/
     env_file:
       - .env
     ports:
