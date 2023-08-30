@@ -17,7 +17,7 @@ router = APIRouter(prefix='/posts', tags=['posts'])
 
 @router.get('/', status_code=status.HTTP_200_OK)
 async def get_posts(
-    ids: list[int] | None = Query(default=None, title='Posts IDs', description='List of Posts IDs to retrieve'),
+    id: list[int] | None = Query(default=None, title='Posts IDs', description='List of Posts IDs to retrieve'),
     limit: int | None = Query(default=100, gte=1, le=10000, title='Limit', description='Limit the qty of posts items'),
     offset: int | None = Query(default=0, gte=0, title='Offset', description='Post index to start retrieving from'),
     title: str | None = Query(default=None),
@@ -25,13 +25,15 @@ async def get_posts(
     db: Session = Depends(get_db)
 ) -> list[schemas.PostOut]:
     posts_query = db.query(models.Post, func.count(models.PostLike.post_id).label('likes_count')) \
-        .join(models.PostLike, models.PostLike.post_id == models.Post.id, isouter=True).group_by(models.Post.id)
-    if ids:
-        posts_query = posts_query.filter(models.User.id.in_(ids))
+        .join(models.PostLike, models.PostLike.post_id == models.Post.id, isouter=True) \
+        .group_by(models.Post.id) \
+        .order_by(models.Post.published_at.desc())
+    if id:
+        posts_query = posts_query.filter(models.Post.id.in_(id))
     if title:
         posts_query = posts_query.filter(models.Post.title.contains(title))
     posts = posts_query.offset(offset).limit(limit).all()
-    posts = [schemas.PostOut(**post.__dict__, likes_count=likes_count) for post, likes_count in posts]
+    posts = [{**post.__dict__, 'likes_count': likes_count} for post, likes_count in posts]
     return posts
 
 
@@ -58,7 +60,7 @@ async def get_post(
 ) -> schemas.PostOut:
     post_obj = db.query(models.Post).filter(models.Post.id == id).first()
     if post_obj is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Post not found')
     post_obj.likes_count = db.query(models.PostLike).filter(models.PostLike.post_id == id).count()
     return post_obj
 
@@ -72,7 +74,7 @@ async def update_post(
 ) -> schemas.PostOut:
     post_query = db.query(models.Post).filter(models.Post.id == id, models.Post.user_id == current_user.id)
     if post_query.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Post not found')
     post_query.update(post_data.dict(exclude_unset=True))
     db.commit()
     post_obj = post_query.first()
@@ -89,7 +91,7 @@ async def delete_post(
     post_deleted = db.query(models.Post). \
         filter(models.Post.id == id, models.Post.user_id == current_user.id).delete()
     if not post_deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Post not found')
     db.commit()
 
 
@@ -102,7 +104,7 @@ async def like_post(
     # Check if provided post exists
     post_obj = db.query(models.Post).filter(models.Post.id == post_id, models.Post.is_active == True).first()
     if not post_obj:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='post not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Post not found')
 
     # Check if like for this post and this user already exists 
     like_obj: bool = db.query(models.PostLike).filter(
@@ -110,7 +112,7 @@ async def like_post(
         models.PostLike.user_id == current_user.id
     ).first()
     if like_obj:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='like already exists')
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Like already exists')
 
     # Create PostLike object
     like_obj = models.PostLike(post=post_obj, user=current_user)
@@ -128,7 +130,7 @@ async def unlike_post(
 ) -> schemas.MessageSuccess:
     like_query = db.query(models.PostLike).filter(models.Post.id == post_id, models.User.id == current_user.id)
     if not like_query.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='like not found')
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Like not found')
     like_query.delete()
     db.commit()
     return {'message': 'success'}
