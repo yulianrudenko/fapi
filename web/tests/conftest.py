@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from faker import Faker
 
 from app import models
 from app.main import app
@@ -14,6 +15,7 @@ from app.auth import create_access_token
 
 engine = create_engine(settings.TESTS_DB_URL)
 TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+fake = Faker()
 
 @pytest.fixture(scope='function')
 def session():
@@ -38,11 +40,23 @@ def client(session):
 
 @pytest.fixture(scope='function')
 def user_obj(session):
-    user_obj = models.User(email='test@mail.com', first_name='Joe', password=hash_password('12345'), birth_date='2000-01-01')
+    plain_password = fake.password()
+    user_obj = models.User(email=fake.email(), first_name=fake.first_name(), password=hash_password(plain_password), birth_date='2000-01-01')
     session.add(user_obj)
     session.commit()
     session.refresh(user_obj)
-    user_obj.plain_password = '12345'
+    user_obj.plain_password = plain_password
+    return user_obj
+
+
+@pytest.fixture(scope='function')
+def extra_user_obj(session):
+    plain_password = fake.password()
+    user_obj = models.User(email=fake.email(), first_name=fake.first_name(), password=hash_password(plain_password), birth_date='2000-01-01')
+    session.add(user_obj)
+    session.commit()
+    session.refresh(user_obj)
+    user_obj.plain_password = plain_password
     return user_obj
 
 
