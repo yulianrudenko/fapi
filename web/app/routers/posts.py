@@ -1,9 +1,10 @@
 from fastapi import (
     APIRouter,
-    Depends, 
+    Response,
     HTTPException,
     Path, Query, Body,
     status,
+    Depends, 
 )
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -93,14 +94,15 @@ async def delete_post(
     if not post_deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Post not found')
     db.commit()
+    return None
 
 
-@router.post('/{post_id}/like', status_code=status.HTTP_200_OK)
+@router.post('/{post_id}/like', status_code=status.HTTP_201_CREATED)
 async def like_post(
     post_id: int = Path(title='Post ID', description='ID of the post to like'),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
-) -> schemas.MessageSuccess:
+) -> None:
     # Check if provided post exists
     post_obj = db.query(models.Post).filter(models.Post.id == post_id, models.Post.is_active == True).first()
     if not post_obj:
@@ -119,18 +121,18 @@ async def like_post(
     db.add(like_obj)
     db.commit()
     db.refresh(like_obj)
-    return {'message': 'success'}
+    return Response(status_code=status.HTTP_201_CREATED)
 
 
-@router.post('/{post_id}/unlike', status_code=status.HTTP_200_OK)
+@router.post('/{post_id}/unlike', status_code=status.HTTP_204_NO_CONTENT)
 async def unlike_post(
     post_id: int = Path(title='Post ID', description='ID of the post to unlike'),
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
-) -> schemas.MessageSuccess:
-    like_query = db.query(models.PostLike).filter(models.Post.id == post_id, models.User.id == current_user.id)
+) -> None:
+    like_query = db.query(models.PostLike).filter(models.PostLike.post_id == post_id, models.PostLike.user == current_user)
     if not like_query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Like not found')
     like_query.delete()
     db.commit()
-    return {'message': 'success'}
+    return None

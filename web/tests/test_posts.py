@@ -143,12 +143,9 @@ def test_update_post_fail(authorized_client: TestClient, session, test_posts: li
     assert response.json() == {'detail': 'Post not found'}
 
     # Not authenticated
-    authorized_headers = authorized_client.headers
-    authorized_client.headers = {}
-    response = authorized_client.patch(f'posts/{test_post.id}')
+    response = authorized_client.patch(f'posts/{test_post.id}', headers={'Authorization': ''})
     assert response.status_code == 401
     assert response.json() == {'detail': 'Not authenticated'}
-    authorized_client.headers = authorized_headers
 
     # Trying to update post that was not created by user
     session.query(models.Post).filter(models.Post.id == test_post.id).update({'user_id': extra_user_obj.id})
@@ -157,7 +154,7 @@ def test_update_post_fail(authorized_client: TestClient, session, test_posts: li
     assert response.json() == {'detail': 'Post not found'}
 
 
-def test_delete_post_success(authorized_client: TestClient, test_posts: list[models.Post], session):
+def test_delete_post_success(authorized_client: TestClient, session, test_posts: list[models.Post]):
     test_post = test_posts[0]
     assert session.query(models.Post).filter(models.Post.id == test_post.id).count() == 1
     assert session.query(models.Post).count() == len(test_posts)
@@ -176,15 +173,102 @@ def test_delete_post_fail(authorized_client: TestClient, session, test_posts: li
     assert response.json() == {'detail': 'Post not found'}
 
     # Not authenticated
-    authorized_headers = authorized_client.headers
-    authorized_client.headers = {}
-    response = authorized_client.patch(f'posts/{test_post_id}')
+    response = authorized_client.patch(f'posts/{test_post_id}', headers={'Authorization': ''})
     assert response.status_code == 401
     assert response.json() == {'detail': 'Not authenticated'}
-    authorized_client.headers = authorized_headers
 
     # Trying to delete post that was not created by user
     session.query(models.Post).filter(models.Post.id == test_post_id).update({'user_id': extra_user_obj.id})
     response = authorized_client.delete(f'posts/{test_post_id}')
     assert response.status_code == 404
     assert response.json() == {'detail': 'Post not found'}
+
+
+def test_like_post_success(authorized_client: TestClient, session, user_obj: models.User, test_posts: list[models.Post]):
+    test_post_id = test_posts[0].id
+    user_id = user_obj.id
+    assert session.query(models.PostLike).count() == 0
+
+    response = authorized_client.post(f'posts/{test_post_id}/like')
+    assert response.status_code == 201
+    test_post_likes = session.query(models.PostLike).filter(models.PostLike.post_id == test_post_id)
+    assert test_post_likes.count() == 1
+    test_post_like = test_post_likes.first()
+    assert test_post_like.user_id == user_id
+    assert test_post_like.post_id == test_post_id
+
+
+def test_like_post_fail(authorized_client: TestClient, session, user_obj: models.User, test_posts: list[models.Post]):
+    test_post_id = test_posts[0].id
+    assert session.query(models.PostLike).count() == 0
+
+    # Not authenticated
+    response = authorized_client.post(f'posts/{test_post_id}/like', headers={'Authorization': ''})
+    assert response.status_code == 401
+    assert response.json() == {'detail': 'Not authenticated'}
+
+    # PostLike already exists
+    like_obj = models.PostLike(post_id=test_post_id, user=user_obj)
+    session.add(like_obj)
+    session.commit()
+    response = authorized_client.post(f'posts/{test_post_id}/like')  # Request to create identical PostLike
+    assert response.status_code == 409
+    assert response.json() == {'detail': 'Like already exists'}
+    assert session.query(models.PostLike).filter(models.PostLike.post_id == test_post_id).count() == 1
+
+    # Post is not active
+    session.query(models.Post).filter(models.Post.id == test_post_id).update({'is_active': False})
+    session.commit()
+    response = authorized_client.post(f'posts/{test_post_id}/like')
+    assert response.status_code == 404
+    assert response.json() == {'detail': 'Post not found'}
+    assert session.query(models.Post).filter(models.Post.id == test_post_id).count() == 1
+    assert session.query(models.PostLike).filter(models.PostLike.post_id == test_post_id).count() == 1
+
+    # Post does not exist
+    session.query(models.Post).filter(models.Post.id == test_post_id).delete()
+    session.commit()
+    response = authorized_client.post(f'posts/{test_post_id}/like')
+    assert response.status_code == 404
+    assert response.json() == {'detail': 'Post not found'}
+    assert session.query(models.PostLike).filter(models.PostLike.post_id == test_post_id).count() == 0
+
+
+def test_unlike_post_success(authorized_client: TestClient, session, user_obj: models.User, test_posts: list[models.Post]):
+    test_post_id = test_posts[0].id
+    # Create PostLike object
+    like_obj = models.PostLike(post_id=test_post_id, user=user_obj)
+    session.add(like_obj)
+    session.commit()
+
+    response = authorized_client.post(f'posts/{test_post_id}/unlike')
+    assert response.status_code == 204
+    assert session.query(models.PostLike).filter(models.PostLike.post_id == test_post_id).count() == 0
+
+
+def test_unlike_post_fail(
+    authorized_client: TestClient,
+    session,
+    user_obj: models.User,
+    extra_user_obj: models.User,
+    test_posts: list[models.Post]
+):
+    test_post_id = test_posts[0].id
+
+    # PostLike does not exist
+    response = authorized_client.post(f'posts/{test_post_id}/unlike')
+    assert response.status_code == 404
+    assert response.json() == {'detail': 'Like not found'}
+
+    # PostLike does not belong to user
+    like_obj = models.PostLike(post_id=test_post_id, user=extra_user_obj)
+    session.add(like_obj)
+    session.commit()
+    response = authorized_client.post(f'posts/{test_post_id}/unlike')
+    assert response.status_code == 404
+    assert response.json() == {'detail': 'Like not found'}
+
+    # Not authenticated
+    response = authorized_client.post(f'posts/{test_post_id}/unlike', headers={'Authorization': ''})
+    assert response.status_code == 401
+    assert response.json() == {'detail': 'Not authenticated'}

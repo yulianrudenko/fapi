@@ -7,7 +7,6 @@ class MessageSuccess(BaseModel):
 
 
 class UserBase(BaseModel):
-    email: EmailStr
     first_name: str = Field(
         min_length=2, max_length=110,
         description='First name',
@@ -21,16 +20,26 @@ class UserBase(BaseModel):
         if current_date.month < birth_date.month or (current_date.month == birth_date.month and current_date.day < birth_date.day):
             age -= 1  # Subtract 1 from the age if the birthday hasn't occurred yet
         if age < 18:
-            raise ValueError('you must be over 18 to create an account')
+            raise ValueError('You must be over 18 to use this service')
         return birth_date
 
 
 class UserCreate(UserBase):
+    email: EmailStr
     password: str = Field(min_length=5, max_length=50)
+
+
+class UserUpdate(UserBase):
+    first_name: str | None = Field(
+        min_length=2, max_length=110,
+        description='First name',
+    )
+    birth_date: date | None = Field(description='Birth Date')
 
 
 class UserOut(UserBase):
     id: int
+    email: EmailStr
 
     class Config:
         orm_mode = True

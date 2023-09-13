@@ -3,6 +3,7 @@ from fastapi import (
     Depends,
     HTTPException,
     status,
+    Body
 )
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -37,6 +38,21 @@ def login(credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depe
             'type': 'bearer'
         }
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Invalid credentials')
+
+
+@router.patch('/', status_code=status.HTTP_200_OK)
+def update_user(
+    user_data: schemas.UserUpdate = Body(),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> schemas.UserOut:
+    user_query = db.query(models.User).filter(models.User.id == current_user.id)
+    user_data = user_data.dict(exclude_unset=True)
+    if user_data:
+        user_query.update(user_data)
+        db.commit()
+    user_obj = user_query.first()
+    return user_obj
 
 
 @router.get('/{id}', status_code=status.HTTP_200_OK)
