@@ -13,6 +13,11 @@ from . import models
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_LIFETIME_MINUTES = 60 * 24 * 7
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail='Could not validate credentials',
+    headers={'WWW-Authenticate': 'Bearer'},
+)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 
@@ -23,11 +28,6 @@ def create_access_token(user_id: str | int) ->str:
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> models.User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail='Could not validate credentials',
-        headers={'WWW-Authenticate': 'Bearer'},
-    )
     try:
         payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:

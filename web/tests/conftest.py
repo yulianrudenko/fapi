@@ -17,6 +17,7 @@ engine = create_engine(settings.TESTS_DB_URL)
 TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 fake = Faker()
 
+
 @pytest.fixture(scope='function')
 def session():
     Base.metadata.drop_all(bind=engine)
