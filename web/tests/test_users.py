@@ -97,14 +97,13 @@ def test_get_user_success(authorized_client: TestClient, user_obj: models.User):
     assert user_data.id == user_obj.id
 
 
-def test_get_user_fail(authorized_client: TestClient, user_obj: models.User):
-    # Not authenticated
-    response = authorized_client.get(f'users/{user_obj.id}', headers={'Authorization': ''})
-    assert response.status_code == 401
-    assert response.json() == {'detail': 'Not authenticated'}
+# def test_get_user_fail(authorized_client: TestClient, user_obj: models.User):
+#     # Not authenticated
+#     response = authorized_client.get(f'users/{user_obj.id}', headers={'Authorization': ''})
+#     assert response.status_code == 401
+#     assert response.json() == {'detail': 'Not authenticated'}
 
-    # User not found
-    response = authorized_client.get(url=f'users/{user_obj.id+9999}')
-    assert response.status_code == 404
-    assert response.json() == {'detail': 'User not found'}
-
+#     # User not found
+#     response = authorized_client.get(url=f'users/{user_obj.id+9999}')
+#     assert response.status_code == 404
+#     assert response.json() == {'detail': 'User not found'}

@@ -56,7 +56,11 @@ def update_user(
 
 
 @router.get('/{id}', status_code=status.HTTP_200_OK)
-def get_user(id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)) -> schemas.UserOut:
+def get_user(
+    id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> schemas.UserOut:
     user_obj = selectors.get_user(id=id)
     if not user_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
