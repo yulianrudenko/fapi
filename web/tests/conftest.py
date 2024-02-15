@@ -1,9 +1,10 @@
 import pytest
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from faker import Faker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from typing import Generator
 
 from app import models
 from app.main import app
@@ -19,18 +20,18 @@ fake = Faker()
 
 
 @pytest.fixture(scope='function')
-def session(monkeypatch):
+def session() -> Generator[Session, None, None]:
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     try:
-        db = TestSessionLocal()
-        yield db
+        session = TestSessionLocal()
+        yield session
     finally:
-        db.close()
+        session.close()
 
 
 @pytest.fixture(scope='function')
-def client(session):
+def client(session) -> Generator[TestClient, None, None]:
     def override_get_db():
         try:
             yield session
@@ -41,7 +42,7 @@ def client(session):
 
 
 @pytest.fixture(scope='function')
-def user_obj(session):
+def user_obj(session) -> models.User:
     plain_password = fake.password()
     user_obj = models.User(email=fake.email(), first_name=fake.first_name(), password=hash_password(plain_password), birth_date='2000-01-01')
     session.add(user_obj)
@@ -52,7 +53,7 @@ def user_obj(session):
 
 
 @pytest.fixture(scope='function')
-def extra_user_obj(session):
+def extra_user_obj(session) -> models.User:
     plain_password = fake.password()
     user_obj = models.User(email=fake.email(), first_name=fake.first_name(), password=hash_password(plain_password), birth_date='2000-01-01')
     session.add(user_obj)
@@ -63,7 +64,7 @@ def extra_user_obj(session):
 
 
 @pytest.fixture(scope='function')
-def authorized_client(client, user_obj):
+def authorized_client(client, user_obj) -> TestClient:
     client.headers = {'Authorization': f'Bearer {create_access_token(user_id=str(user_obj.id))}'}
     return client
 

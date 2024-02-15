@@ -23,7 +23,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 def create_access_token(user_id: str | int) ->str:
     expires_at = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_LIFETIME_MINUTES)
-    data = {'user_id': user_id, 'exp': expires_at}
+    data = {'sub': str(user_id), 'exp': expires_at}
     return jwt.encode(data, key=SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -32,7 +32,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])
     except JWTError:
         raise credentials_exception
-    user_id: str = payload.get('user_id')
+    user_id: str = payload.get('sub')
     if user_id is not None:
         user = get_user(id=user_id, db=db)
         if user is not None:

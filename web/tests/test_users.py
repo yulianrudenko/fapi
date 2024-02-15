@@ -103,7 +103,7 @@ def test_get_user_fail(authorized_client: TestClient, user_obj: models.User):
     assert response.status_code == 401
     assert response.json() == {'detail': 'Not authenticated'}
 
-#     # User not found
-    response = authorized_client.get(url=f'users/{user_obj.id+10}')
+    # User not found
+    response = authorized_client.get(url=f'users/{user_obj.id+100}')
     assert response.status_code == 404
     assert response.json() == {'detail': 'User not found'}
