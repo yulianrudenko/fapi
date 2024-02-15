@@ -20,14 +20,14 @@ def test_get_posts_success(authorized_client: TestClient, test_posts: list[model
     assert all([str(post['id']) in [str(test_posts[0].id), str(test_posts[1].id)] for post in json])
 
     # With "title" query parameter
-    response = authorized_client.get(f'posts/?title=Title')
+    response = authorized_client.get('posts/?title=Title')
     json = response.json()
     assert response.status_code == 200
     assert len(json) == len(test_posts)
     assert len(list(map(lambda post: schemas.PostOut(**post), json))) == len(test_posts)
     assert all([str(post['id']) in [str(p.id) for p in test_posts] for post in json])
 
-    response = authorized_client.get(f'posts/?title=Title1')
+    response = authorized_client.get('posts/?title=Title1')
     json = response.json()
     assert response.status_code == 200
     assert len(json) == 1
@@ -35,7 +35,7 @@ def test_get_posts_success(authorized_client: TestClient, test_posts: list[model
     assert json[0]['content'] == 'Content1'
 
     # With "limit" query parameter
-    response = authorized_client.get(f'posts/?limit=1')
+    response = authorized_client.get('posts/?limit=1')
     json = response.json()
     assert response.status_code == 200
     assert len(json) == 1
@@ -43,7 +43,7 @@ def test_get_posts_success(authorized_client: TestClient, test_posts: list[model
     assert lambda post: schemas.PostOut(**json[0])
 
     # With "offset" query parameter
-    response = authorized_client.get(f'posts/?offset=1')
+    response = authorized_client.get('posts/?offset=1')
     json = response.json()
     assert response.status_code == 200
     assert len(json) == 4
@@ -71,7 +71,7 @@ def test_create_post_success(authorized_client: TestClient, user_obj: models.Use
     assert response.status_code == 201
     json = response.json()
     assert schemas.PostOut(**json)
-    assert type(json['id']) is int
+    assert isinstance(json['id'], int) is True
     assert json['user_id'] == user_id
     assert json['likes_count'] == 0
 
