@@ -61,7 +61,7 @@ def get_user(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> schemas.UserOut:
-    user_obj = selectors.get_user(id=id)
+    user_obj = selectors.get_user(id=id, db=db)
     if not user_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='User not found')
     return user_obj

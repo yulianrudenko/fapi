@@ -19,7 +19,7 @@ fake = Faker()
 
 
 @pytest.fixture(scope='function')
-def session():
+def session(monkeypatch):
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     try:
