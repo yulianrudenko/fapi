@@ -5,5 +5,5 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /home/web
 
-COPY . /home/web/
+COPY ./web /home/web/
 RUN pip install -r /home/web/requirements.txt
