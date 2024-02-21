@@ -20,6 +20,7 @@ class User(Base):
     password = Column(String, nullable=False)
     first_name = Column(String, nullable=False)
     birth_date = Column(DATE, nullable=False)
+    profile_picture = Column(String(120), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     posts = relationship('Post', back_populates='user')

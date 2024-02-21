@@ -1,9 +1,24 @@
 from pydantic import BaseModel, Field, validator, EmailStr
+from copy import deepcopy
 from datetime import datetime, date
 
 
-class MessageSuccess(BaseModel):
-    message: str = 'success'
+class BaseModel(BaseModel):
+    @classmethod
+    def from_orm(cls, obj, getter_binding=None):
+        getter_binding = getter_binding or {}
+        obj = deepcopy(obj)
+        for field in cls.__fields__:
+            method = getter_binding.get(field)
+            if method is None:
+                method = getattr(cls, f"get_{field}", None)
+            if method is not None and callable(method):
+                setattr(obj, field, method(obj))
+        return super().from_orm(obj)
+
+
+class Status(BaseModel):
+    status: bool
 
 
 class UserBase(BaseModel):
@@ -40,9 +55,16 @@ class UserUpdate(UserBase):
 class UserOut(UserBase):
     id: int
     email: EmailStr
+    profile_picture: str | None
 
     class Config:
         orm_mode = True
+
+    @staticmethod
+    def get_profile_picture(obj):
+        profile_pic_name = obj.profile_picture
+        if profile_pic_name is not None:
+            return f'http://localhost/media/images/{obj.profile_picture}'
 
 
 class Token(BaseModel):

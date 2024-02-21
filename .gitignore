@@ -1,3 +1,4 @@
 *pycache*
 venv
 .env
+web/media/images/*

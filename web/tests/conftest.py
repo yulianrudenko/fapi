@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from fastapi.testclient import TestClient
@@ -19,12 +20,28 @@ TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 fake = Faker()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def override_settings():
+    """Override settings for the entire test session"""
+    with pytest.MonkeyPatch().context() as patch:
+        patch.setattr(settings, 'USER_IMAGES_FOLDER', 'test_images')
+        yield
+
+
+def pytest_runtest_teardown():
+    """Clear test image folder"""
+    test_images_dir_path = os.path.join(settings.BASE_DIR, 'media', 'test_images')
+    for filename in os.listdir(test_images_dir_path):
+        file_path = os.path.join(test_images_dir_path, filename)
+        os.remove(file_path)
+
+
 @pytest.fixture(scope='function')
 def session() -> Generator[Session, None, None]:
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    session = TestSessionLocal()
     try:
-        session = TestSessionLocal()
         yield session
     finally:
         session.close()
@@ -36,7 +53,7 @@ def client(session) -> Generator[TestClient, None, None]:
         try:
             yield session
         finally:
-            session.close()
+            pass
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app=app)
 
