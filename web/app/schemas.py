@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field, validator, EmailStr
 from copy import deepcopy
 from datetime import datetime, date
 
+from app.config import settings
+
 
 class BaseModel(BaseModel):
     @classmethod
@@ -64,7 +66,7 @@ class UserOut(UserBase):
     def get_profile_picture(obj):
         profile_pic_name = obj.profile_picture
         if profile_pic_name is not None:
-            return f'http://localhost/media/images/{obj.profile_picture}'
+            return f'{settings.HOSTNAME}/media/images/{obj.profile_picture}'
 
 
 class Token(BaseModel):

@@ -6,6 +6,7 @@ from pathlib import Path
 
 class Settings(BaseSettings):
     SECRET_KEY: str
+    HOSTNAME: str
     DB_URL: str
     TESTS_DB_URL: str
     BASE_DIR = Path(__file__).resolve().parent.parent
