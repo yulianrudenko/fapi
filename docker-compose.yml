@@ -11,7 +11,7 @@ services:
     volumes:
       - ./web:/home/web/
     env_file:
-      - .env
+      - ./env/local.env
     ports:
       - "80:80"
     restart: "no"
