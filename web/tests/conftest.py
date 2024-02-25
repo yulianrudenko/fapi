@@ -18,6 +18,7 @@ from app.auth import create_access_token
 engine = create_engine(settings.TESTS_DB_URL)
 TestSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 fake = Faker()
+TEST_IMAGES_DIR = os.path.join(settings.BASE_DIR, 'media', 'test_images')
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -28,11 +29,16 @@ def override_settings():
         yield
 
 
-def pytest_runtest_teardown():
+def pytest_runtest_setup(item):
+    """Run once before test session"""
+    # Make sure folder for media images exists  
+    os.makedirs(TEST_IMAGES_DIR, exist_ok=True)
+
+
+def pytest_runtest_teardown(item):
     """Clear test image folder"""
-    test_images_dir_path = os.path.join(settings.BASE_DIR, 'media', 'test_images')
-    for filename in os.listdir(test_images_dir_path):
-        file_path = os.path.join(test_images_dir_path, filename)
+    for filename in os.listdir(TEST_IMAGES_DIR):
+        file_path = os.path.join(TEST_IMAGES_DIR, filename)
         os.remove(file_path)
 
 
