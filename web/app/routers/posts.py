@@ -9,9 +9,9 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from ..db import get_db
-from ..auth import get_current_user
-from .. import models, schemas
+from app.db import get_db
+from app.auth import get_current_user
+from app import models, schemas
 
 router = APIRouter(prefix='/posts', tags=['posts'])
 
